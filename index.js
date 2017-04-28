@@ -192,9 +192,11 @@ if (program.daemonize) {
       var waitToStopTrace = function () {
         setTimeout(function () {
           if (allClients.length <= 0) {
-            traceStarted = false;
-            traceCommand = "";
-            stopTraceComm();
+            if (traceStarted) {
+              traceStarted = false;
+              traceCommand = "";
+              stopTraceComm();
+            }
           }
         }, 3000);
       }
