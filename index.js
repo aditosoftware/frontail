@@ -129,6 +129,8 @@ if (program.daemonize) {
       var traceComm = exec(traceCom, function (error, stdout, stderr) {
         if (error !== null) {
           console.log('exec error: ' + error);
+          traceStarted = false;
+          traceCommand = '';
           socket.emit("tracestarted", {
             'err': true,
             'out': stderr

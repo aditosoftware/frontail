@@ -64,7 +64,7 @@
 
         socket.on('tracestopped', function(stat){
             if(stat.err){
-                alert(stat.out);
+                changeButton(false);
             } else {
                 alert("Shorewall trace was stopped");
             }
@@ -72,6 +72,7 @@
         
         socket.on('tracestarted', function(stat){
             if(stat.err){
+                changeButton(false);
                 alert(stat.out);
             } else {
                 console.log("Shorewall trace was started");
