@@ -1,5 +1,6 @@
 'use strict';
 
+const exec = require('child_process').exec;
 const connect = require('connect');
 const cookieParser = require('cookie');
 const crypto = require('crypto');
@@ -81,6 +82,10 @@ if (program.daemonize) {
     });
   }
 
+  var allClients = [];
+  var traceStarted = false;
+  var traceCommand = '';
+
   /**
    * Setup UI highlights
    */
@@ -114,6 +119,91 @@ if (program.daemonize) {
     tailer.getBuffer().forEach((line) => {
       socket.emit('line', line);
     });
+
+    socket.on('iptrace', function (command) {
+      traceStarted = true;
+      traceCommand = command;
+
+      //start trace
+      var traceCom = 'sudo shorewall iptrace ' + command;
+      var traceComm = exec(traceCom, function (error, stdout, stderr) {
+        if (error !== null) {
+          console.log('exec error: ' + error);
+          socket.emit("tracestarted", {
+            'err': true,
+            'out': stderr
+          })
+        } else {
+          socket.emit("tracestarted", {
+            'err': false,
+            'out': stdout
+          })
+        }
+
+      });
+    })
+
+    socket.on('checkStartTrace', function () {
+      //socket.emit("statusTrace", traceStarted);
+      socket.emit("statusTrace", {
+        'stat': traceStarted,
+        'command': traceCommand
+      });
+    })
+
+    allClients.push(socket);
+    console.log("Client connected.Now: " + allClients.length);
+
+    var stopTraceComm = function () {
+      //stop trace
+      console.log("stop trace");
+      var cmd = "sudo shorewall reload";
+      var stopCommand = exec(cmd, function (error, stdout, stderr) {
+        if (error !== null) {
+          console.log('exec error: ' + error);
+          socket.emit("tracestopped", {
+            'err': true,
+            'out': stderr
+          })
+        } else {
+          socket.emit("tracestopped", {
+            'err': false,
+            'out': stdout
+          })
+        }
+
+      });
+    }
+
+    socket.on('traceStop', function () {
+      traceStarted = false;
+      traceCommand = "";
+      stopTraceComm();
+    });
+
+    socket.on('disconnect', function () {
+      console.log('Got disconnect!');
+
+      var i = allClients.indexOf(socket);
+      allClients.splice(i, 1);
+
+      var waitToStopTrace = function () {
+        setTimeout(function () {
+          if (allClients.length <= 0) {
+            traceStarted = false;
+            traceCommand = "";
+            stopTraceComm();
+          }
+        }, 3000);
+      }
+
+      console.log("Now: " + allClients.length);
+      if (allClients.length <= 0) {
+        waitToStopTrace();
+      }
+    });
+
+
   });
 
   /**

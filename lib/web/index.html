@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>tail -F __TITLE__</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" type="text/css" href="/styles/__THEME__.css">
     <link rel="icon" href="/favicon.ico">
 </head>
+
 <body>
     <nav class="topbar navbar navbar-inverse navbar-fixed-top" role="navigation">
         <div class="container-fluid">
             <span class="navbar-brand" href="#">tail -F __TITLE__</span>
+            <form class="navbar-form navbar-left width60" role="search">
+                <div class="form-group width100">
+                    <input type="text" class="form-control" style="width:100%" placeholder="trace (iptables match expression)" id="traceComm">
+                </div>
+            </form>
+            <button type="button" class="btn btn-default btn-info navbar-btn" id="startTraceB" onclick="startTrace();">Start Trace</button>
             <form class="navbar-form navbar-right" role="search" onkeypress="return event.keyCode != 13;">
                 <div class="form-group">
                     <input type="text" class="form-control query" placeholder="Filter" tabindex="1">
@@ -26,6 +34,49 @@
     <script src="/app.js"></script>
     <script type="text/javascript">
         var socket = new io.connect('/' + '__NAMESPACE__');
+        traceStat = "";
+        socket.emit("checkStartTrace");
+        
+        var changeButton = function(stat){
+            if(stat){
+                traceStat = true;
+                var but = document.getElementById('startTraceB');
+                but.className = "btn btn-default btn-danger navbar-btn"
+                but.firstChild.data = "Stop Trace";
+            } else {
+                traceStat = false;
+                var but = document.getElementById('startTraceB');
+                but.className = "btn btn-default btn-info navbar-btn"
+                but.firstChild.data = "Start Trace";
+                document.getElementById("traceComm").value = '';
+            }
+        }
+        
+        socket.on('statusTrace', function(trace){
+            //trace.stat, trace.command
+            console.log(trace);
+            changeButton(trace.stat);
+
+            //add trace command text to input
+            document.getElementById("traceComm").value = trace.command;
+
+        })
+
+        socket.on('tracestopped', function(stat){
+            if(stat.err){
+                alert(stat.out);
+            } else {
+                alert("Shorewall trace was stopped");
+            }
+        })
+        
+        socket.on('tracestarted', function(stat){
+            if(stat.err){
+                alert(stat.out);
+            } else {
+                console.log("Shorewall trace was started");
+            }
+        })
 
         window.load = App.init({
             socket: socket,
@@ -34,6 +85,23 @@
             topbar: document.getElementsByClassName('topbar')[0],
             body: document.getElementsByTagName('body')[0]
         });
-  </script>
+        
+        function startTrace(){
+            if(traceStat){
+                changeButton(false);
+                socket.emit("traceStop");
+            } else {
+                var traceInput = document.getElementById("traceComm");
+                
+                if(traceInput.value !== undefined && traceInput.value !== null && traceInput.value.length > 0 ){
+                    socket.emit('iptrace',traceInput.value);
+                    changeButton(true);
+                } else {
+                    alert("Input field empty");
+                }
+            }   
+        }
+    </script>
 </body>
+
 </html>

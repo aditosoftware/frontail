@@ -41,3 +41,10 @@ body {
 .log .line-selected {
     background-color: #ffb2b0;
 }
+
+.width60 {
+    width: 55%;
+}
+.width100 {
+    width: 100%;
+}
