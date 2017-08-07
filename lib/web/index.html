@@ -36,9 +36,17 @@
         var socket = new io.connect('/' + '__NAMESPACE__');
         traceStat = "";
         socket.emit("checkStartTrace");
-        
-        var changeButton = function(stat){
-            if(stat){
+
+        var txt = document.getElementById('traceComm');
+        txt.addEventListener("keypress", function (event) {
+            var keycode = (event.keyCode ? event.keyCode : event.which);
+            if (keycode == '13') {
+                startTrace();
+            }
+        });
+
+        var changeButton = function (stat) {
+            if (stat) {
                 traceStat = true;
                 var but = document.getElementById('startTraceB');
                 but.className = "btn btn-default btn-danger navbar-btn"
@@ -51,8 +59,8 @@
                 document.getElementById("traceComm").value = '';
             }
         }
-        
-        socket.on('statusTrace', function(trace){
+
+        socket.on('statusTrace', function (trace) {
             //trace.stat, trace.command
             console.log(trace);
             changeButton(trace.stat);
@@ -62,16 +70,16 @@
 
         })
 
-        socket.on('tracestopped', function(stat){
-            if(stat.err){
+        socket.on('tracestopped', function (stat) {
+            if (stat.err) {
                 changeButton(false);
             } else {
                 alert("Shorewall trace was stopped");
             }
         })
-        
-        socket.on('tracestarted', function(stat){
-            if(stat.err){
+
+        socket.on('tracestarted', function (stat) {
+            if (stat.err) {
                 changeButton(false);
                 alert(stat.out);
             } else {
@@ -86,21 +94,21 @@
             topbar: document.getElementsByClassName('topbar')[0],
             body: document.getElementsByTagName('body')[0]
         });
-        
-        function startTrace(){
-            if(traceStat){
+
+        function startTrace() {
+            if (traceStat) {
                 changeButton(false);
                 socket.emit("traceStop");
             } else {
                 var traceInput = document.getElementById("traceComm");
-                
-                if(traceInput.value !== undefined && traceInput.value !== null && traceInput.value.length > 0 ){
-                    socket.emit('iptrace',traceInput.value);
+
+                if (traceInput.value !== undefined && traceInput.value !== null && traceInput.value.length > 0) {
+                    socket.emit('iptrace', traceInput.value);
                     changeButton(true);
                 } else {
                     alert("Input field empty");
                 }
-            }   
+            }
         }
     </script>
 </body>
